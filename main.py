@@ -1,6 +1,5 @@
 '''
-本文件负责VTO的flask web服务端
-提供web服务、响应客户端预测请求
+
 This file implements the web server on flask.
 It can provide web service, response all predict requests.
 '''
@@ -17,6 +16,7 @@ from io import StringIO, BytesIO
 import base64
 from datetime import datetime
 import json
+from flask_ngrok import run_with_ngrok
 
 # Use base64 to send & receive images between clients and the server
 def readb64(base64_string):
@@ -37,12 +37,13 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 # init for all global variables
 
-model = Model(r"C:\Users\sushanth\Documents\GitHub\VTON_PROJECT\checkpoints\checkpoints\GMM\gmm_final.pth",
-              r"C:\Users\sushanth\Documents\GitHub\VTON_PROJECT\checkpoints\checkpoints\TOM\tom_final.pth",
-              use_cuda=False)
+model = Model("checkpoints/jpp.pb",
+              "checkpoints/gmm.pth",
+              "checkpoints/tom.pth",
+              use_cuda=True)
 
 app = Flask(__name__)
-
+run_with_ngrok(app) 
 # UPLOAD_FOLDER = 'request_upload'
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -57,7 +58,7 @@ for cloth in cloth_list_raw:
 
 
 # Use "/web" url to get web page
-@app.route('/web')
+@app.route('/')
 def hello_world():
     return render_template('login.html', img_list=cloth_list)
 
@@ -89,7 +90,7 @@ def upload_image():
 
 def run_model_web(f, cloth_name, cloth_f=None):
     '''
-    为web服务进行预测。cloth_name和cloth_f中必有一个有内容，优先选择cloth_f，即用户上传的衣服图片
+   
     prediction service. cloth_name and cloth_f cannot be both None. cloth_f is prior, which is from user upload.
     '''
     if cloth_f is None:
@@ -102,7 +103,7 @@ def run_model_web(f, cloth_name, cloth_f=None):
         except:
             c_img = np.array(Image.open(cloth_name))
 
-    # 固化到本地的缓存文件夹，访问的时候作为静态资源被调用
+  
     # local resource temp file would be used as static resource.
     temp_o_name = os.path.join("static", "result", "%d_%s" % (
         int(time.time()), cloth_name.split("/")[-1]))
@@ -155,7 +156,7 @@ server:
 @app.route('/cloth', methods=['GET', 'POST'])
 def Hello_cloth():
     '''
-    响应客户端请求
+
     reponse requests from clients
     '''
     output_str = ""
@@ -184,8 +185,7 @@ def Hello_cloth():
 
 
 if __name__ == '__main__':
-    app.jinja_env.auto_reload = True
-    app.config['TEMPLATES_AUTO_RELOAD'] = True
+    
 
     # run server locally
     app.run()
